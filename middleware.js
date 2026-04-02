@@ -4,6 +4,17 @@ import { getToken } from 'next-auth/jwt';
 export async function middleware(request) {
   const { pathname } = request.nextUrl;
 
+  // Allow static assets to pass through unchanged.
+  const isStaticAsset =
+    pathname.startsWith('/_next/') ||
+    pathname.startsWith('/models/') ||
+    pathname.startsWith('/fonts/') ||
+    /\.[a-zA-Z0-9]+$/.test(pathname);
+
+  if (isStaticAsset) {
+    return NextResponse.next();
+  }
+
   // Never intercept API routes. API handlers already enforce auth and must return JSON.
   if (pathname.startsWith('/api/')) {
     return NextResponse.next();
@@ -16,6 +27,7 @@ export async function middleware(request) {
 
   const isRootRoute = pathname === '/';
   const isLoginRoute = pathname === '/login' || pathname === '/auth';
+  const role = token?.role || 'viewer';
 
   // Public routes
   const isPublicRoute = isRootRoute || isLoginRoute;
@@ -39,7 +51,20 @@ export async function middleware(request) {
       return NextResponse.redirect(loginUrl);
     }
 
-    if (token.role !== 'admin') {
+    if (role !== 'admin') {
+      const dashboardUrl = new URL('/dashboard', request.url);
+      return NextResponse.redirect(dashboardUrl);
+    }
+  }
+
+  // Analyst/Admin-only route protection
+  if (pathname.startsWith('/dashboard/transactions') || pathname.startsWith('/assistant')) {
+    if (!token) {
+      const loginUrl = new URL('/login', request.url);
+      return NextResponse.redirect(loginUrl);
+    }
+
+    if (!['analyst', 'admin'].includes(role)) {
       const dashboardUrl = new URL('/dashboard', request.url);
       return NextResponse.redirect(dashboardUrl);
     }

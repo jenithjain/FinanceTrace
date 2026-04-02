@@ -6,6 +6,7 @@ import User from "@/lib/models/User";
 import { signToken } from "@/lib/jwt";
 
 const VALID_ROLES = ['viewer', 'analyst', 'admin'];
+const TOKEN_SYNC_INTERVAL_MS = 30 * 1000;
 
 function normalizeRequestedRole(role) {
   if (!role || typeof role !== 'string') {
@@ -66,6 +67,8 @@ export const authOptions = {
               throw new Error('Password must be at least 8 characters');
             }
 
+            const isViewerSignup = normalizedRequestedRole === 'viewer';
+
             // Create new user
             const newUser = await User.create({
               email: normalizedEmail,
@@ -74,12 +77,32 @@ export const authOptions = {
               authProvider: 'credentials',
               hasCompletedKYC: true,
               role: 'viewer',
-              ...roleRequestDefaults,
+              requestedRole: normalizedRequestedRole,
+              roleRequestStatus: isViewerSignup ? 'none' : roleRequestDefaults.roleRequestStatus,
               roleRequestUpdatedAt: new Date(),
-              status: 'inactive'
+              status: isViewerSignup ? 'active' : 'inactive'
             });
 
-            // Do not auto-login new accounts. Admin must approve first.
+            // Viewer signup gets immediate access.
+            if (isViewerSignup) {
+              const financeToken = signToken({ userId: newUser._id, role: newUser.role });
+
+              return {
+                id: newUser._id.toString(),
+                email: newUser.email,
+                name: newUser.name,
+                hasCompletedKYC: newUser.hasCompletedKYC,
+                image: newUser.image,
+                role: newUser.role || 'viewer',
+                requestedRole: newUser.requestedRole || 'viewer',
+                roleRequestStatus: newUser.roleRequestStatus || 'none',
+                status: newUser.status || 'active',
+                authProvider: newUser.authProvider,
+                financeToken
+              };
+            }
+
+            // Analyst/admin signup remains approval-based.
             throw new Error(
               `Account created with '${newUser.requestedRole}' request. Pending admin approval before first login.`
             );
@@ -172,7 +195,7 @@ export const authOptions = {
               requestedRole: 'viewer',
               roleRequestStatus: 'none',
               roleRequestUpdatedAt: new Date(),
-              status: 'inactive'
+              status: 'active'
             });
           } else {
             // Check if user signed up with credentials
@@ -184,6 +207,17 @@ export const authOptions = {
               await existingUser.save();
             } else if (existingUser.authProvider !== 'google') {
               throw new Error(`This account uses ${existingUser.authProvider} sign-in`);
+            }
+
+            // Normalize legacy viewer accounts to immediate access model.
+            if (
+              existingUser.role === 'viewer' &&
+              existingUser.requestedRole === 'viewer' &&
+              existingUser.roleRequestStatus !== 'pending' &&
+              existingUser.status !== 'active'
+            ) {
+              existingUser.status = 'active';
+              await existingUser.save();
             }
           }
 
@@ -217,6 +251,7 @@ export const authOptions = {
         token.status = user.status;
         token.authProvider = user.authProvider;
         token.financeToken = user.financeToken;
+        token.lastSyncedAt = Date.now();
       }
 
       // Update token when KYC is completed
@@ -234,6 +269,41 @@ export const authOptions = {
 
       if (trigger === 'update' && session?.roleRequestStatus) {
         token.roleRequestStatus = session.roleRequestStatus;
+      }
+
+      // Keep role/status in sync so approvals apply without manual logout/login.
+      if (token?.id) {
+        const now = Date.now();
+        const lastSyncedAt = Number(token.lastSyncedAt || 0);
+        const shouldSync = now - lastSyncedAt > TOKEN_SYNC_INTERVAL_MS;
+
+        if (shouldSync) {
+          try {
+            await dbConnect();
+            const dbUser = await User.findById(token.id)
+              .select('role requestedRole roleRequestStatus status hasCompletedKYC authProvider')
+              .lean();
+
+            if (dbUser) {
+              const roleChanged = token.role !== dbUser.role;
+
+              token.role = dbUser.role || 'viewer';
+              token.requestedRole = dbUser.requestedRole || dbUser.role || 'viewer';
+              token.roleRequestStatus = dbUser.roleRequestStatus || 'none';
+              token.status = dbUser.status || 'active';
+              token.hasCompletedKYC = Boolean(dbUser.hasCompletedKYC);
+              token.authProvider = dbUser.authProvider || token.authProvider;
+
+              if (roleChanged || !token.financeToken) {
+                token.financeToken = signToken({ userId: token.id, role: token.role });
+              }
+            }
+
+            token.lastSyncedAt = now;
+          } catch (syncError) {
+            console.error('JWT sync error:', syncError);
+          }
+        }
       }
 
       return token;

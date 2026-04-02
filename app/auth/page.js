@@ -70,7 +70,7 @@ export default function AuthPage() {
       localStorage.removeItem('financeOAuthRoleRequest');
       localStorage.removeItem('financePendingRequestedRole');
 
-      await signIn('google', { callbackUrl: '/onboarding' });
+      await signIn('google', { callbackUrl: '/dashboard' });
     } catch (err) {
       setError('Failed to sign in with Google');
       setIsLoading(false);

@@ -1,9 +1,11 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
+import { useSession } from "next-auth/react";
 import StaggeredMenu from "@/components/StaggeredMenu";
 
 export default function ProfileLayout({ children }) {
+  const { data: session } = useSession();
   const [menuBtnColor, setMenuBtnColor] = useState('#000000');
 
   useEffect(() => {
@@ -23,6 +25,26 @@ export default function ProfileLayout({ children }) {
     return () => observer.disconnect();
   }, []);
 
+  const menuItems = useMemo(() => {
+    const role = session?.user?.role || 'viewer';
+    const items = [
+      { label: "Home", link: "/", ariaLabel: "Go to Home" },
+      { label: "Dashboard", link: "/dashboard", ariaLabel: "View Dashboard" },
+      { label: "Profile", link: "/profile", ariaLabel: "View Profile" },
+    ];
+
+    if (role === 'analyst' || role === 'admin') {
+      items.splice(2, 0, { label: "Transactions", link: "/dashboard/transactions", ariaLabel: "View Transactions" });
+      items.splice(3, 0, { label: "Assistant", link: "/assistant", ariaLabel: "AI Assistant" });
+    }
+
+    if (role === 'admin') {
+      items.splice(items.length - 1, 0, { label: "Users", link: "/dashboard/users", ariaLabel: "Manage Users" });
+    }
+
+    return items;
+  }, [session?.user?.role]);
+
   return (
     <>
       {/* Navbar */}
@@ -36,12 +58,7 @@ export default function ProfileLayout({ children }) {
             colors={["#0f172a", "#111827", "#1f2937"]}
             menuButtonColor={menuBtnColor}
             openMenuButtonColor="#22c55e"
-            items={[
-              { label: "Home", link: "/", ariaLabel: "Go to Home" },
-              { label: "Dashboard", link: "/dashboard", ariaLabel: "View Dashboard" },
-              { label: "Assistant", link: "/assistant", ariaLabel: "AI Assistant" },
-              { label: "Profile", link: "/profile", ariaLabel: "View Profile" },
-            ]}
+            items={menuItems}
           />
         </div>
       </div>

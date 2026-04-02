@@ -2,6 +2,8 @@
 
 import dynamic from "next/dynamic";
 import { useState, useEffect, useMemo, useRef } from "react";
+import { useRouter } from "next/navigation";
+import { useSession } from "next-auth/react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -59,6 +61,8 @@ function formatAssistantText(content) {
 }
 
 function AssistantPage() {
+  const router = useRouter();
+  const { data: session, status } = useSession();
   const [input, setInput] = useState("");
   const [authError, setAuthError] = useState("");
   const [activeQuickPrompt, setActiveQuickPrompt] = useState("");
@@ -87,6 +91,27 @@ function AssistantPage() {
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, isLoading, activeThreadId]);
+
+  useEffect(() => {
+    if (status === "loading") return;
+
+    const sessionRole = session?.user?.role;
+    const storedUserRaw = typeof window !== "undefined" ? localStorage.getItem("financeUser") : null;
+    let storedRole = null;
+
+    if (storedUserRaw) {
+      try {
+        storedRole = JSON.parse(storedUserRaw)?.role;
+      } catch {
+        storedRole = null;
+      }
+    }
+
+    const effectiveRole = sessionRole || storedRole || "viewer";
+    if (effectiveRole === "viewer") {
+      router.replace("/dashboard");
+    }
+  }, [router, session?.user?.role, status]);
 
   const getFinanceToken = () => {
     if (typeof window === "undefined") return "";

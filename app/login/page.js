@@ -177,7 +177,7 @@ export default function LoginPage() {
       localStorage.removeItem('financePendingRequestedRole');
 
       await signIn("google", { 
-        callbackUrl: "/onboarding"
+        callbackUrl: "/dashboard"
       });
     } catch (err) {
       console.error("Google auth error:", err);
@@ -216,11 +216,7 @@ export default function LoginPage() {
             openMenuButtonColor="#22c55e"
             items={[
               { label: "Home", link: "/", ariaLabel: "Go to Home" },
-              { label: "Dashboard", link: "/dashboard", ariaLabel: "View Dashboard" },
-              { label: "Transactions", link: "/transactions", ariaLabel: "Manage Transactions" },
-              { label: "Features", link: "/#features", ariaLabel: "View Features" },
-              { label: "Pricing", link: "/#pricing", ariaLabel: "View Pricing" },
-              { label: "Contact", link: "/#contact", ariaLabel: "Contact us" },
+              { label: "Login", link: "/login", ariaLabel: "Go to Login" },
             ]}
           />
         </div>

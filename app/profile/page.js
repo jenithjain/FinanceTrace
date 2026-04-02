@@ -3,6 +3,7 @@
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
+import toast from "react-hot-toast";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -10,14 +11,37 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Separator } from "@/components/ui/separator";
 import {
   User, Mail, Calendar, Shield, CheckCircle2, AlertCircle,
-  Building2, DollarSign, Users as UsersIcon, Target, TrendingUp
+  Building2, DollarSign, Users as UsersIcon, Target, TrendingUp, Loader2
 } from "lucide-react";
+
+const ROLE_CAPABILITIES = {
+  viewer: [
+    "View dashboard KPIs and trends",
+    "Access personal profile",
+    "Submit role upgrade request",
+  ],
+  analyst: [
+    "View dashboard KPIs and trends",
+    "View transaction records",
+    "Use AI assistant",
+  ],
+  admin: [
+    "Full dashboard and transactions access",
+    "Use AI assistant",
+    "Manage users, roles, and status",
+  ],
+};
+
+function toTitleCase(value) {
+  return String(value || "").charAt(0).toUpperCase() + String(value || "").slice(1);
+}
 
 export default function ProfilePage() {
   const { data: session, status } = useSession();
   const router = useRouter();
   const [userData, setUserData] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [roleRequestLoading, setRoleRequestLoading] = useState("");
 
   useEffect(() => {
     if (status === "unauthenticated") {
@@ -38,6 +62,74 @@ export default function ProfilePage() {
       console.error("Error fetching user data:", error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const getFinanceToken = () => {
+    const fromSession = session?.financeToken;
+    if (fromSession) return fromSession;
+
+    if (typeof window !== "undefined") {
+      return localStorage.getItem("financeToken") || "";
+    }
+
+    return "";
+  };
+
+  const handleRoleRequest = async (requestedRole) => {
+    const token = getFinanceToken();
+    if (!token) {
+      toast.error("Finance token missing. Please log in again.");
+      return;
+    }
+
+    setRoleRequestLoading(requestedRole);
+    const toastId = toast.loading(`Requesting ${requestedRole} access...`);
+
+    try {
+      const response = await fetch("/api/finance/users/request-role", {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ requestedRole }),
+      });
+
+      const data = await response.json();
+      if (!data.success) {
+        throw new Error(data.message || "Failed to submit role request");
+      }
+
+      const updatedUser = data.data?.user;
+      if (updatedUser) {
+        setUserData((previous) => ({ ...previous, ...updatedUser }));
+
+        if (typeof window !== "undefined") {
+          const storedUserRaw = localStorage.getItem("financeUser");
+          if (storedUserRaw) {
+            try {
+              const parsed = JSON.parse(storedUserRaw);
+              localStorage.setItem(
+                "financeUser",
+                JSON.stringify({
+                  ...parsed,
+                  requestedRole: updatedUser.requestedRole || parsed.requestedRole,
+                  roleRequestStatus: updatedUser.roleRequestStatus || parsed.roleRequestStatus,
+                })
+              );
+            } catch {
+              // Ignore localStorage parse issues.
+            }
+          }
+        }
+      }
+
+      toast.success(data.message || "Role request submitted", { id: toastId });
+    } catch (error) {
+      toast.error(error.message || "Failed to submit role request", { id: toastId });
+    } finally {
+      setRoleRequestLoading("");
     }
   };
 
@@ -66,7 +158,11 @@ export default function ProfilePage() {
   };
 
   const businessProfile = userData?.businessProfile;
-  const hasCompletedKYC = session?.user?.hasCompletedKYC || false;
+  const hasCompletedKYC = Boolean(userData?.hasCompletedKYC ?? session?.user?.hasCompletedKYC);
+  const effectiveRole = userData?.role || session?.user?.role || "viewer";
+  const requestedRole = userData?.requestedRole || session?.user?.requestedRole || effectiveRole;
+  const roleRequestStatus = userData?.roleRequestStatus || session?.user?.roleRequestStatus || "none";
+  const capabilities = ROLE_CAPABILITIES[effectiveRole] || ROLE_CAPABILITIES.viewer;
 
   return (
     <div className="min-h-screen w-full">
@@ -152,6 +248,73 @@ export default function ProfilePage() {
           </CardContent>
         </Card>
 
+        {/* Access & Role Card */}
+        <Card className="border-border/40 backdrop-blur-sm bg-card/50">
+          <CardHeader>
+            <CardTitle className="ivy-font flex items-center gap-2">
+              <Shield className="h-5 w-5" />
+              Access and Permissions
+            </CardTitle>
+            <CardDescription className="ivy-font">
+              Your current role and permitted actions in FinanceTrace
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="flex flex-wrap items-center gap-2">
+              <Badge variant="secondary" className="capitalize">Current Role: {effectiveRole}</Badge>
+              {requestedRole !== effectiveRole && (
+                <Badge variant="outline" className="capitalize">Requested: {requestedRole}</Badge>
+              )}
+              {roleRequestStatus !== "none" && (
+                <Badge
+                  variant={roleRequestStatus === "approved" ? "default" : roleRequestStatus === "rejected" ? "destructive" : "outline"}
+                  className="capitalize"
+                >
+                  Request Status: {roleRequestStatus}
+                </Badge>
+              )}
+            </div>
+
+            <div className="rounded-lg border border-border/60 bg-muted/30 p-4">
+              <p className="mb-2 text-sm font-medium text-foreground ivy-font">Current Capabilities</p>
+              <ul className="space-y-1 text-sm text-muted-foreground ivy-font">
+                {capabilities.map((item) => (
+                  <li key={item}>- {item}</li>
+                ))}
+              </ul>
+            </div>
+
+            {(effectiveRole === "viewer" || effectiveRole === "analyst") && (
+              <div className="rounded-lg border border-border/60 bg-muted/30 p-4 space-y-3">
+                <p className="text-sm text-foreground ivy-font">
+                  Need more access? Submit a request for admin approval.
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  {effectiveRole === "viewer" && (
+                    <Button
+                      onClick={() => handleRoleRequest("analyst")}
+                      disabled={Boolean(roleRequestLoading)}
+                      size="sm"
+                    >
+                      {roleRequestLoading === "analyst" ? <Loader2 className="h-4 w-4 animate-spin" /> : "Request Analyst Access"}
+                    </Button>
+                  )}
+                  {effectiveRole !== "admin" && (
+                    <Button
+                      onClick={() => handleRoleRequest("admin")}
+                      disabled={Boolean(roleRequestLoading)}
+                      size="sm"
+                      variant="outline"
+                    >
+                      {roleRequestLoading === "admin" ? <Loader2 className="h-4 w-4 animate-spin" /> : "Request Admin Access"}
+                    </Button>
+                  )}
+                </div>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
         {/* KYC Status Card */}
         <Card className="border-border/40 backdrop-blur-sm bg-card/50">
           <CardHeader>
@@ -198,7 +361,7 @@ export default function ProfilePage() {
                   Complete your profile to unlock full access to FinanceTrace features including advanced analytics, workflow automation, and admin-governed finance operations.
                 </p>
                 <Button
-                  onClick={() => router.push("/dashboard")}
+                  onClick={() => router.push("/onboarding")}
                   className="bg-emerald-500 hover:bg-emerald-600 text-white ivy-font"
                 >
                   Complete KYC Verification

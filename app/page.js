@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { usePathname } from "next/navigation";
+import { useState, useEffect, useMemo } from "react";
+import { useSession } from "next-auth/react";
 import StaggeredMenu from "@/components/StaggeredMenu";
 import ModelViewer from "@/components/ModelViewer";
 import LaserFlow from "@/components/LaserFlow";
@@ -14,11 +14,10 @@ import {
 } from "lucide-react";
 
 export default function Home() {
+  const { data: session, status } = useSession();
   const modelUrl = "/models/data_chart_graphic_table_infographic.glb";
   const [menuBtnColor, setMenuBtnColor] = useState('#000000');
   const [isDarkMode, setIsDarkMode] = useState(false);
-  const [modelKey, setModelKey] = useState(Date.now());
-  const pathname = usePathname();
 
   useEffect(() => {
     // Set initial color
@@ -40,13 +39,34 @@ export default function Home() {
     return () => observer.disconnect();
   }, []);
 
-  // Force remount ModelViewer when returning to home page
-  useEffect(() => {
-    if (pathname === '/') {
-      // Use timestamp to force complete remount
-      setModelKey(Date.now());
+  const menuItems = useMemo(() => {
+    const role = session?.user?.role || "viewer";
+
+    if (status === "authenticated") {
+      const authenticatedItems = [
+        { label: "Home", link: "/", ariaLabel: "Go to Home" },
+        { label: "Dashboard", link: "/dashboard", ariaLabel: "View Dashboard" },
+      ];
+
+      if (role === "analyst" || role === "admin") {
+        authenticatedItems.push({ label: "Transactions", link: "/dashboard/transactions", ariaLabel: "Manage Transactions" });
+        authenticatedItems.push({ label: "Assistant", link: "/assistant", ariaLabel: "AI Assistant" });
+      }
+
+      if (role === "admin") {
+        authenticatedItems.push({ label: "Users", link: "/dashboard/users", ariaLabel: "Manage Users" });
+      }
+
+      authenticatedItems.push({ label: "Profile", link: "/profile", ariaLabel: "View Profile" });
+      return authenticatedItems;
     }
-  }, [pathname]);
+
+    return [
+      { label: "Home", link: "/", ariaLabel: "Go to Home" },
+      { label: "Features", link: "/#features", ariaLabel: "View Features" },
+      { label: "Login", link: "/login", ariaLabel: "Login to your account" },
+    ];
+  }, [session?.user?.role, status]);
 
   return (
   <main className="relative min-h-screen w-full">
@@ -61,15 +81,7 @@ export default function Home() {
             colors={["#0f172a", "#111827", "#1f2937"]}
             menuButtonColor={menuBtnColor}
             openMenuButtonColor="#22c55e"
-            items={[
-              { label: "Home", link: "/", ariaLabel: "Go to Home" },
-              { label: "Dashboard", link: "/dashboard", ariaLabel: "View Dashboard" },
-              { label: "Transactions", link: "/transactions", ariaLabel: "Manage Transactions" },
-              { label: "Features", link: "/#features", ariaLabel: "View Features" },
-              { label: "Pricing", link: "/#pricing", ariaLabel: "View Pricing" },
-              { label: "Contact", link: "/#contact", ariaLabel: "Contact us" },
-              { label: "Login", link: "/login", ariaLabel: "Login to your account" },
-            ]}
+            items={menuItems}
             socialItems={[
               { label: "LinkedIn", link: "https://linkedin.com" },
               { label: "Twitter", link: "https://x.com" },
@@ -154,7 +166,6 @@ export default function Home() {
             <div className="rounded-2xl border border-slate-200/60 bg-white/80 p-2 sm:p-3 shadow-sm backdrop-blur-md dark:border-slate-800 dark:bg-slate-900/80">
               <div className="w-full aspect-square max-w-[570px] mx-auto">
                 <ModelViewer
-                  key={modelKey}
                   url={modelUrl}
                   defaultRotationX={10}
                   minZoomDistance={1.5}
