@@ -1,4 +1,4 @@
-# FinanceTrace
+# FinanceTrace - https://financetrace-jenith.vercel.app
 
 **A role-based finance operations platform built for real-world access control, live analytics, and AI-assisted financial insights.**
 
