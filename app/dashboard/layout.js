@@ -1,9 +1,11 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
+import { useSession } from "next-auth/react";
 import StaggeredMenu from "@/components/StaggeredMenu";
 
 export default function DashboardLayout({ children }) {
+  const { data: session } = useSession();
   const [menuBtnColor, setMenuBtnColor] = useState('#000000');
 
   useEffect(() => {
@@ -25,6 +27,24 @@ export default function DashboardLayout({ children }) {
     return () => observer.disconnect();
   }, []);
 
+  const menuItems = useMemo(() => {
+    const role = session?.user?.role || 'viewer';
+    const baseItems = [
+      { label: "Dashboard", link: "/dashboard", ariaLabel: "View Dashboard" },
+    ];
+
+    if (role === 'analyst' || role === 'admin') {
+      baseItems.push({ label: "Transactions", link: "/dashboard/transactions", ariaLabel: "View Transactions" });
+    }
+
+    if (role === 'admin') {
+      baseItems.push({ label: "Users", link: "/dashboard/users", ariaLabel: "Manage Users" });
+    }
+
+    baseItems.push({ label: "Profile", link: "/profile", ariaLabel: "View Profile" });
+    return baseItems;
+  }, [session?.user?.role]);
+
   return (
     <>
       {/* Navbar */}
@@ -38,13 +58,7 @@ export default function DashboardLayout({ children }) {
             colors={["#0f172a", "#111827", "#1f2937"]}
             menuButtonColor={menuBtnColor}
             openMenuButtonColor="#22c55e"
-            items={[
-              { label: "Home", link: "/", ariaLabel: "Go to Home" },
-              { label: "Dashboard", link: "/dashboard", ariaLabel: "View Dashboard" },
-              { label: "Campaign AI", link: "/campaign", ariaLabel: "AI Campaign Generator" },
-              { label: "Assistant", link: "/assistant", ariaLabel: "AI Assistant" },
-              { label: "Profile", link: "/profile", ariaLabel: "View Profile" },
-            ]}
+            items={menuItems}
           />
         </div>
       </div>

@@ -22,8 +22,12 @@ import { successResponse, errorResponse, HTTP_STATUS } from '@/lib/apiResponse';
  */
 async function handleGetTrends(request) {
   try {
-    const trends = await getTrends();
-    const currentYear = new Date().getFullYear();
+    const { searchParams } = new URL(request.url);
+    const startDate = searchParams.get('startDate') || undefined;
+    const endDate = searchParams.get('endDate') || undefined;
+
+    const trends = await getTrends({ startDate, endDate });
+    const currentYear = trends[0]?.year || new Date().getFullYear();
 
     return successResponse(
       'Monthly trends retrieved successfully',
@@ -36,6 +40,10 @@ async function handleGetTrends(request) {
 
   } catch (error) {
     console.error('Get trends error:', error);
+
+    if (error.statusCode) {
+      return errorResponse(error.message, error.statusCode);
+    }
 
     return errorResponse(
       'Failed to retrieve trends',

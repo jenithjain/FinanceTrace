@@ -21,7 +21,11 @@ import { successResponse, errorResponse, HTTP_STATUS } from '@/lib/apiResponse';
  */
 async function handleGetByCategory(request) {
   try {
-    const categories = await getByCategory();
+    const { searchParams } = new URL(request.url);
+    const startDate = searchParams.get('startDate') || undefined;
+    const endDate = searchParams.get('endDate') || undefined;
+
+    const categories = await getByCategory({ startDate, endDate });
 
     return successResponse(
       'Category breakdown retrieved successfully',
@@ -31,6 +35,10 @@ async function handleGetByCategory(request) {
 
   } catch (error) {
     console.error('Get by category error:', error);
+
+    if (error.statusCode) {
+      return errorResponse(error.message, error.statusCode);
+    }
 
     return errorResponse(
       'Failed to retrieve category breakdown',

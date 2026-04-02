@@ -43,7 +43,12 @@ export default function AuthPage() {
       });
 
       if (result?.error) {
-        setError(result.error);
+        if (result.error.toLowerCase().includes('pending admin approval')) {
+          setError('');
+          setIsSignUp(false);
+        } else {
+          setError(result.error);
+        }
         setIsLoading(false);
         return;
       }
@@ -61,13 +66,11 @@ export default function AuthPage() {
   const handleGoogleAuth = async () => {
     setIsLoading(true);
     try {
-      if (isSignUp) {
-        localStorage.setItem('financePendingRequestedRole', formData.requestedRole || 'viewer');
-      } else {
-        localStorage.removeItem('financePendingRequestedRole');
-      }
+      // Cleanup legacy keys from older builds.
+      localStorage.removeItem('financeOAuthRoleRequest');
+      localStorage.removeItem('financePendingRequestedRole');
 
-      await signIn('google', { callbackUrl: '/dashboard' });
+      await signIn('google', { callbackUrl: '/onboarding' });
     } catch (err) {
       setError('Failed to sign in with Google');
       setIsLoading(false);
@@ -88,8 +91,8 @@ export default function AuthPage() {
           </CardTitle>
           <CardDescription className="text-center text-gray-400">
             {isSignUp 
-              ? 'Sign up to start writing with AI assistance' 
-              : 'Sign in to continue to ScriptForge'}
+              ? 'Sign up to request access to FinanceTrace' 
+              : 'Sign in to continue to FinanceTrace'}
           </CardDescription>
         </CardHeader>
 

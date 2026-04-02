@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { signIn, useSession } from "next-auth/react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import toast from "react-hot-toast";
 import { loginSchema, signupSchema } from "@/lib/validations/auth";
@@ -21,6 +21,7 @@ import {
 
 export default function LoginPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { data: session, status } = useSession();
   const [isLogin, setIsLogin] = useState(true);
   const [showPassword, setShowPassword] = useState(false);
@@ -55,6 +56,15 @@ export default function LoginPage() {
       router.push('/dashboard');
     }
   }, [session, status, router]);
+
+  useEffect(() => {
+    const approval = searchParams.get('approval');
+    const authError = searchParams.get('error');
+
+    if (approval === 'pending' || authError === 'AccessDenied') {
+      toast.error('Account is pending admin approval. You can log in after approval.');
+    }
+  }, [searchParams]);
 
   useEffect(() => {
     // Set initial color
@@ -127,7 +137,12 @@ export default function LoginPage() {
       });
 
       if (result?.error) {
-        toast.error(result.error, { id: toastId });
+        if (result.error.toLowerCase().includes('pending admin approval')) {
+          toast.success(result.error, { id: toastId });
+          setIsLogin(true);
+        } else {
+          toast.error(result.error, { id: toastId });
+        }
         setIsLoading(false);
         return;
       }
@@ -157,14 +172,12 @@ export default function LoginPage() {
     const toastId = toast.loading("Redirecting to Google...");
     
     try {
-      if (!isLogin) {
-        localStorage.setItem('financePendingRequestedRole', formData.requestedRole || 'viewer');
-      } else {
-        localStorage.removeItem('financePendingRequestedRole');
-      }
+      // Cleanup legacy keys from older builds.
+      localStorage.removeItem('financeOAuthRoleRequest');
+      localStorage.removeItem('financePendingRequestedRole');
 
       await signIn("google", { 
-        callbackUrl: "/dashboard"
+        callbackUrl: "/onboarding"
       });
     } catch (err) {
       console.error("Google auth error:", err);

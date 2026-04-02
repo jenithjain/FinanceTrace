@@ -15,8 +15,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata = {
-  title: "ScriptForge - Smart Script Writing Assistant",
-  description: "AI-powered intelligent writing assistant for maintaining narrative continuity, tracking characters, timelines, and plot threads in screenplays and long-form stories",
+  title: "FinanceTrace - Intelligent Finance Operations Platform",
+  description: "FinanceTrace helps teams manage transactions, monitor analytics, and operate role-based finance workflows with secure admin approval controls.",
 };
 
 export default function RootLayout({ children }) {

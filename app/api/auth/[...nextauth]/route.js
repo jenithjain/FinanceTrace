@@ -17,13 +17,6 @@ function normalizeRequestedRole(role) {
 }
 
 function getRoleRequestDefaults(requestedRole) {
-  if (requestedRole === 'viewer') {
-    return {
-      requestedRole: 'viewer',
-      roleRequestStatus: 'none'
-    };
-  }
-
   return {
     requestedRole,
     roleRequestStatus: 'pending'
@@ -83,35 +76,27 @@ export const authOptions = {
               role: 'viewer',
               ...roleRequestDefaults,
               roleRequestUpdatedAt: new Date(),
-              status: 'active'
+              status: 'inactive'
             });
 
-            // Generate finance JWT token
-            const financeToken = signToken({ userId: newUser._id, role: newUser.role });
-
-            return {
-              id: newUser._id.toString(),
-              email: newUser.email,
-              name: newUser.name,
-              hasCompletedKYC: newUser.hasCompletedKYC,
-              role: newUser.role,
-              requestedRole: newUser.requestedRole,
-              roleRequestStatus: newUser.roleRequestStatus,
-              status: newUser.status,
-              authProvider: newUser.authProvider,
-              financeToken
-            };
+            // Do not auto-login new accounts. Admin must approve first.
+            throw new Error(
+              `Account created with '${newUser.requestedRole}' request. Pending admin approval before first login.`
+            );
           } else {
             // Sign In Flow
             const user = await User.findOne({ email: normalizedEmail });
             
             if (!user) {
-              throw new Error('Invalid email or password');
+              throw new Error('Account not found. Please sign up first.');
             }
 
             // Check if user is active
             if (user.status === 'inactive') {
-              throw new Error('Your account has been deactivated. Please contact support.');
+              if (user.roleRequestStatus === 'pending') {
+                throw new Error('Your account is pending admin approval. Please try again after approval.');
+              }
+              throw new Error('Your account is inactive. Please contact an admin.');
             }
 
             // Check if user signed up with different provider
@@ -187,14 +172,9 @@ export const authOptions = {
               requestedRole: 'viewer',
               roleRequestStatus: 'none',
               roleRequestUpdatedAt: new Date(),
-              status: 'active'
+              status: 'inactive'
             });
           } else {
-            // Check if user is active
-            if (existingUser.status === 'inactive') {
-              throw new Error('Your account has been deactivated');
-            }
-            
             // Check if user signed up with credentials
             if (existingUser.authProvider === 'credentials' && !existingUser.googleId) {
               // Link Google account to existing credentials account

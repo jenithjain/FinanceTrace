@@ -195,7 +195,7 @@ export default function ProfilePage() {
             ) : (
               <div className="space-y-4">
                 <p className="text-sm text-muted-foreground ivy-font">
-                  Complete your writer profile to unlock full access to ScriptForge features including story analytics, character tracking, and AI-powered creative assistance.
+                  Complete your profile to unlock full access to FinanceTrace features including advanced analytics, workflow automation, and admin-governed finance operations.
                 </p>
                 <Button
                   onClick={() => router.push("/dashboard")}

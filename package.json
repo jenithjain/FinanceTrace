@@ -1,8 +1,8 @@
 {
-  "name": "scriptforge",
+  "name": "financetrace",
   "version": "0.1.0",
   "private": true,
-  "description": "ScriptForge - Smart Script Writing Assistant. AI-powered intelligent writing assistant for maintaining narrative continuity in screenplays and long-form stories",
+  "description": "FinanceTrace - Intelligent finance operations platform with RBAC, analytics, and secure onboarding workflows",
   "scripts": {
     "dev": "next dev",
     "build": "next build",
@@ -34,6 +34,7 @@
     "nanoid": "^5.1.6",
     "next": "^16.1.6",
     "next-auth": "^4.24.13",
+    "radix-ui": "^1.4.3",
     "react": "19.2.0",
     "react-dom": "19.2.0",
     "react-hot-toast": "^2.6.0",

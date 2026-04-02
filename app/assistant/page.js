@@ -8,23 +8,27 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
 import Footer from "@/components/Footer";
 import {
-  Send, Sparkles, TrendingUp, BarChart3, DollarSign,
-  PieChart, AlertCircle, ArrowUpRight
+  Send,
+  Sparkles,
+  TrendingUp,
+  BarChart3,
+  DollarSign,
+  AlertCircle,
 } from "lucide-react";
 
 const SUGGESTED_PROMPTS = [
-  "Help me track character arcs across my screenplay",
-  "Check for timeline inconsistencies in chapters 1-5",
-  "Summarize Sarah's character development",
-  "Find all scenes where Marcus and Elena interact",
-  "Suggest plot ideas to resolve the mystery thread"
+  "Summarize this month\'s spending anomalies",
+  "Show expense trends by category for the last 90 days",
+  "Identify vendors with unusual transaction spikes",
+  "Draft a weekly finance operations summary",
+  "Suggest controls to reduce recurring overspend"
 ];
 
 const DUMMY_MESSAGES = [
   {
     id: 1,
     role: "assistant",
-    content: "Hello! I'm ScriptForge AI, your intelligent writing assistant. I can help you maintain narrative continuity, track characters and timelines, detect inconsistencies, and provide creative suggestions for your screenplay or story. What would you like me to help with?",
+    content: "Hello! I'm FinanceTrace AI, your finance operations assistant. I can help analyze transaction patterns, detect anomalies, summarize trends, and suggest operational improvements. What would you like to review today?",
     timestamp: "07:21 PM"
   }
 ];
@@ -61,7 +65,7 @@ export default function Assistant() {
       const aiMessage = {
         id: messages.length + 2,
         role: "assistant",
-        content: "Analyzing your manuscript... ✓\n\nStory Context: Loaded 15 chapters\nCharacter Tracking: 12 main characters identified\nTimeline Validation: No inconsistencies found\nPlot Threads: 5 active, 2 resolved\n\nI've mapped Sarah's character arc from Chapter 1-15. Her transformation from skeptic to believer is well-paced. Suggested enhancement: Add a scene in Chapter 10 showing her internal conflict. Shall I provide detailed suggestions?",
+        content: "Analyzing your finance workspace... ✓\n\nTransaction Coverage: Last 90 days loaded\nCategory Health: 6 categories monitored\nAnomaly Scan: 3 outliers flagged\nVariance Check: 2 budget thresholds exceeded\n\nTop finding: Vendor spend in Operations is trending +18% above baseline. Suggested next step: set a weekly threshold alert and review high-value transactions from the last 14 days. Want me to draft the action checklist?",
         timestamp: new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })
       };
       setMessages(prev => [...prev, aiMessage]);
@@ -103,12 +107,12 @@ export default function Assistant() {
               <div className="absolute -top-1 -right-1 w-3 h-3 bg-emerald-400 rounded-full" />
             </div>
             <div>
-              <h1 className="text-3xl font-bold text-foreground ivy-font">ScriptForge AI</h1>
-              <p className="text-sm text-emerald-500 ivy-font">Smart Script Writing Assistant</p>
+              <h1 className="text-3xl font-bold text-foreground ivy-font">FinanceTrace AI</h1>
+              <p className="text-sm text-emerald-500 ivy-font">Intelligent Finance Operations Assistant</p>
             </div>
           </div>
           <p className="text-muted-foreground ivy-font max-w-2xl mx-auto">
-            Intelligent writing assistant with comprehensive story awareness and narrative continuity tracking
+            AI assistance for transaction analysis, finance monitoring, and data-backed operational decision support
           </p>
         </div>
 
@@ -206,7 +210,7 @@ export default function Assistant() {
                     value={input}
                     onChange={(e) => setInput(e.target.value)}
                     onKeyDown={handleKeyDown}
-                    placeholder="Ask about your story, check character consistency, or get creative suggestions..."
+                    placeholder="Ask about spending trends, anomalies, approvals, or operational recommendations..."
                     className="resize-none min-h-[60px] max-h-[120px] pr-12 ivy-font bg-background/80 border-border/60 focus:border-emerald-500/50 focus:ring-emerald-500/20 transition-all"
                     rows={1}
                   />
@@ -235,10 +239,10 @@ export default function Assistant() {
         {/* Quick Stats */}
         <div className="mt-6 grid grid-cols-2 md:grid-cols-4 gap-4 animate-fade-in" style={{ animationDelay: '0.3s' }}>
           {[
-            { icon: TrendingUp, label: "Sales Forecast", value: "Active" },
-            { icon: BarChart3, label: "RFM Segmentation", value: "Ready" },
-            { icon: Sparkles, label: "Campaign Agent", value: "Live" },
-            { icon: Target, label: "Workflows", value: "Updated" }
+            { icon: TrendingUp, label: "Revenue Pulse", value: "Active" },
+            { icon: BarChart3, label: "Variance Monitor", value: "Ready" },
+            { icon: Sparkles, label: "Operations Agent", value: "Live" },
+            { icon: DollarSign, label: "Transaction Ledger", value: "Synced" }
           ].map((stat, idx) => (
             <Card
               key={idx}

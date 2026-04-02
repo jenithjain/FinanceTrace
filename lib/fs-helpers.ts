@@ -1,7 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 
-export const TMP_DIR = path.join(process.cwd(), 'tmp', 'campaign-images');
+export const TMP_DIR = path.join(process.cwd(), 'tmp', 'assistant-images');
 
 export function ensureTmpDir() {
   if (!fs.existsSync(TMP_DIR)) {

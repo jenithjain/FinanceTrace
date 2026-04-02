@@ -78,7 +78,7 @@ src/
 
 ```bash
 git clone <repository-url>
-cd scriptforge
+cd <project-folder>
 npm install
 ```
 

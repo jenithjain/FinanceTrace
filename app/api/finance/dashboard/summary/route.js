@@ -21,7 +21,11 @@ import { successResponse, errorResponse, HTTP_STATUS } from '@/lib/apiResponse';
  */
 async function handleGetSummary(request) {
   try {
-    const summary = await getSummary();
+    const { searchParams } = new URL(request.url);
+    const startDate = searchParams.get('startDate') || undefined;
+    const endDate = searchParams.get('endDate') || undefined;
+
+    const summary = await getSummary({ startDate, endDate });
 
     return successResponse(
       'Summary retrieved successfully',
@@ -31,6 +35,10 @@ async function handleGetSummary(request) {
 
   } catch (error) {
     console.error('Get summary error:', error);
+
+    if (error.statusCode) {
+      return errorResponse(error.message, error.statusCode);
+    }
 
     return errorResponse(
       'Failed to retrieve summary',

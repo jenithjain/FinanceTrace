@@ -38,7 +38,7 @@ export default function AssistantLayout({ children }) {
             items={[
               { label: "Home", link: "/", ariaLabel: "Go to Home" },
               { label: "Dashboard", link: "/dashboard", ariaLabel: "View Dashboard" },
-              { label: "Campaign AI", link: "/campaign", ariaLabel: "AI Campaign Generator" },
+              { label: "Transactions", link: "/dashboard/transactions", ariaLabel: "View Transactions" },
               { label: "Assistant", link: "/assistant", ariaLabel: "AI Assistant" },
               { label: "Features", link: "/#features", ariaLabel: "View Features" },
             ]}

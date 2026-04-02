@@ -32,11 +32,13 @@ async function handleGetRecent(request) {
   try {
     const { searchParams } = new URL(request.url);
     let limit = parseInt(searchParams.get('limit')) || 10;
+    const startDate = searchParams.get('startDate') || undefined;
+    const endDate = searchParams.get('endDate') || undefined;
     
     // Enforce max limit of 50
     limit = Math.min(Math.max(limit, 1), 50);
 
-    const transactions = await getRecent(limit);
+    const transactions = await getRecent(limit, { startDate, endDate });
 
     return successResponse(
       'Recent transactions retrieved successfully',
@@ -46,6 +48,10 @@ async function handleGetRecent(request) {
 
   } catch (error) {
     console.error('Get recent error:', error);
+
+    if (error.statusCode) {
+      return errorResponse(error.message, error.statusCode);
+    }
 
     return errorResponse(
       'Failed to retrieve recent transactions',
