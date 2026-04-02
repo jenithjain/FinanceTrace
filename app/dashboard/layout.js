@@ -35,6 +35,7 @@ export default function DashboardLayout({ children }) {
 
     if (role === 'analyst' || role === 'admin') {
       baseItems.push({ label: "Transactions", link: "/dashboard/transactions", ariaLabel: "View Transactions" });
+      baseItems.push({ label: "Assistant", link: "/assistant", ariaLabel: "Open AI Assistant" });
     }
 
     if (role === 'admin') {

@@ -2,16 +2,23 @@ import { NextResponse } from 'next/server';
 import { getToken } from 'next-auth/jwt';
 
 export async function middleware(request) {
+  const { pathname } = request.nextUrl;
+
+  // Never intercept API routes. API handlers already enforce auth and must return JSON.
+  if (pathname.startsWith('/api/')) {
+    return NextResponse.next();
+  }
+
   const token = await getToken({ 
     req: request,
     secret: process.env.NEXTAUTH_SECRET 
   });
 
-  const { pathname } = request.nextUrl;
+  const isRootRoute = pathname === '/';
+  const isLoginRoute = pathname === '/login' || pathname === '/auth';
 
   // Public routes
-  const publicRoutes = ['/', '/login', '/auth', '/api/auth'];
-  const isPublicRoute = publicRoutes.some(route => pathname.startsWith(route));
+  const isPublicRoute = isRootRoute || isLoginRoute;
 
   // If user is not authenticated and trying to access protected route
   if (!token && !isPublicRoute) {
@@ -20,7 +27,7 @@ export async function middleware(request) {
   }
 
   // If authenticated user tries to access login/auth, redirect to dashboard
-  if (token && (pathname === '/login' || pathname === '/auth')) {
+  if (token && isLoginRoute) {
     const dashboardUrl = new URL('/dashboard', request.url);
     return NextResponse.redirect(dashboardUrl);
   }
