@@ -94,8 +94,8 @@ export default function NotFound() {
                 Oops! Page not found
               </h2>
               <p className="text-lg text-muted-foreground ivy-font">
-                The page you're looking for doesn't exist in FinanceTrace. 
-                Let's get you back to your dashboard and finance operations.
+                The page you&apos;re looking for doesn&apos;t exist in FinanceTrace. 
+                Let&apos;s get you back to your dashboard and finance operations.
               </p>
             </div>
 
